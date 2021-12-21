@@ -31,6 +31,7 @@
 #define CLI_DETAIL_INPUTDEVICE_H_
 
 #include <functional>
+#include <latch>
 #include <string>
 #include "../scheduler.h"
 
@@ -56,7 +57,12 @@ protected:
 
     void Notify(std::pair<KeyType,char> k)
     {
-        scheduler.Post([this,k](){ if (handler) handler(k); });
+		std::latch done{1};
+        scheduler.Post([this,k,&done](){
+			if (handler) handler(k);
+			done.count_down();
+		});
+		done.wait();
     }
 
 private:
